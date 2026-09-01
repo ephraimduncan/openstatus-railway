@@ -8,21 +8,32 @@ set -eu
 : "${TB_TOKEN:?TB_TOKEN is required (the tinybird-local workspace token)}"
 export TB_VERSION_WARNING=0
 
+# nginx answers /tokens before the API is up, so wait for an authenticated
+# API call to succeed instead.
 echo "Waiting for Tinybird Local at ${TB_HOST} ..."
 i=0
-until curl -sf "${TB_HOST}/tokens" >/dev/null 2>&1; do
+until [ "$(curl -s -o /dev/null -w '%{http_code}' "${TB_HOST}/v0/workspace?token=${TB_TOKEN}")" = "200" ]; do
   i=$((i+1))
-  if [ "$i" -gt 120 ]; then
-    echo "Tinybird Local did not become healthy in time" >&2
+  if [ "$i" -gt 180 ]; then
+    echo "Tinybird Local did not become ready in time (or TB_TOKEN is not accepted)" >&2
     exit 1
   fi
   sleep 5
 done
+sleep 5
 echo "Tinybird Local is up."
 
-echo "Deploying OpenStatus Tinybird project (tb deploy = deployment create --wait --auto) ..."
 cd /work
-tb --cloud --host "${TB_HOST}" --token "${TB_TOKEN}" deploy
+attempt=1
+until tb --cloud --host "${TB_HOST}" --token "${TB_TOKEN}" deploy; do
+  if [ "$attempt" -ge 3 ]; then
+    echo "tb deploy failed ${attempt} times" >&2
+    exit 1
+  fi
+  attempt=$((attempt+1))
+  echo "tb deploy failed, retrying in 30s (attempt ${attempt}/3) ..."
+  sleep 30
+done
 
 echo "Deployments:"
 tb --cloud --host "${TB_HOST}" --token "${TB_TOKEN}" deployment ls || true
