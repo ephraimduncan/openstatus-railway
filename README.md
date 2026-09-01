@@ -6,19 +6,21 @@ Self-host [OpenStatus](https://github.com/openstatusHQ/openstatus) (status pages
 
 ## What gets deployed
 
-| Service | Image / source | Role |
+| Service | Built from | Role |
 |---|---|---|
-| `dashboard` | `ghcr.io/openstatushq/openstatus-dashboard` | Admin UI (public) |
-| `status-page` | `ghcr.io/openstatushq/openstatus-status-page` | Public status pages |
-| `server` | `ghcr.io/openstatushq/openstatus-server` | REST / ConnectRPC / MCP API (public) |
-| `workflows` | `ghcr.io/openstatushq/openstatus-workflows` | Background jobs, alerting, cron endpoints |
-| `private-location` | `ghcr.io/openstatushq/openstatus-private-location` | Ingest server: receives check results from probes |
+| `dashboard` | `dashboard/Dockerfile` (upstream `openstatus-dashboard` image + self-host settings) | Admin UI (public) |
+| `status-page` | `status-page/Dockerfile` | Public status pages |
+| `server` | `server/Dockerfile` | REST / ConnectRPC / MCP API (public) |
+| `workflows` | `workflows/Dockerfile` | Background jobs, alerting, cron endpoints (volume) |
+| `private-location` | `private-location/Dockerfile` | Ingest server: receives check results from probes (public, for extra probes) |
 | `probe` | `ghcr.io/openstatushq/private-location` | The monitoring probe that runs your checks |
-| `cron` | this repo, `cron/` | Scheduler sidecar + `os-admin` toolbox |
-| `libsql` | `ghcr.io/tursodatabase/libsql-server` | Application database (volume) |
+| `cron` | `cron/Dockerfile` | Scheduler sidecar + `os-admin` toolbox |
+| `libsql` | `libsql/Dockerfile` (upstream `libsql-server` image) | Application database (volume) |
 | `db-migrate` | `ghcr.io/openstatushq/openstatus-db-migrate` | One-shot schema migration (exits when done) |
-| `tinybird-local` | this repo, `tinybird-local/` | Time-series analytics (ClickHouse, volume) |
-| `tinybird-deploy` | this repo, `tinybird-deploy/` | One-shot job that loads the OpenStatus analytics schema |
+| `tinybird-local` | `tinybird-local/Dockerfile` (upstream `tinybird-local` image) | Time-series analytics (ClickHouse, volume) |
+| `tinybird-deploy` | `tinybird-deploy/Dockerfile` | One-shot job that loads the OpenStatus analytics schema |
+
+The wrapper Dockerfiles are one `FROM` plus `ENV` lines. They exist because Railway's template generator only keeps variables that reference other services, so every fixed setting (ports, `SELF_HOST`, dummy Upstash values, and so on) lives in the image and the template carries just six inputs.
 
 All secrets (`AUTH_SECRET`, `CRON_SECRET`, the probe key) are generated at deploy time. The Tinybird tokens are fixed defaults because Tinybird Local only accepts tokens in its own signed format; the service is private-network only. See [Rotate the Tinybird tokens](#rotate-the-tinybird-tokens).
 
@@ -105,7 +107,7 @@ os-admin sql "<statement>"
 
 ## For maintainers of this template
 
-The whole project is defined in [`.railway/railway.ts`](.railway/railway.ts) (Railway Infrastructure as Code). To reproduce the reference project:
+The whole project is defined in [`.railway/railway.ts`](.railway/railway.ts) (Railway Infrastructure as Code, CLI 5.42 or newer). To reproduce the reference project:
 
 ```bash
 npm install
@@ -118,6 +120,17 @@ railway domain -s server -p 3000
 railway domain -s private-location -p 8080
 ```
 
-Then generate the template from the project (`railway templates create`), replace the literal `AUTH_SECRET`, `CRON_SECRET` and `OPENSTATUS_KEY` values with `${{secret(32)}}` in the template composer, and publish (`railway templates publish`). `scripts/template-config.sh <code>` prints a template's stored configuration for review.
+Generate the template from the project (`railway templates create --project <id> --json`) and open the editor URL it prints. Railway drops literal values when it generates a template, so fill in these six variables in the composer, then publish with `railway templates publish <id> --category Observability --readme-file README.md`:
+
+| Service | Variable | Default to enter | Description to enter |
+|---|---|---|---|
+| `dashboard` | `AUTH_SECRET` | `${{secret(32)}}` | Auth.js secret, generated for you |
+| `dashboard` | `RESEND_API_KEY` | `re_placeholder_not_configured` | Optional. Set a real Resend key to send notification emails; the magic link is printed in the dashboard logs either way |
+| `workflows` | `CRON_SECRET` | `${{secret(32)}}` | Shared secret between the apps, the ingest server and the cron sidecar, generated for you |
+| `probe` | `OPENSTATUS_KEY` | `${{secret(32)}}` | Private location token, generated for you; `os-admin setup` registers it |
+| `tinybird-local` | `TB_LOCAL_WORKSPACE_TOKEN` | the workspace token from `.railway/railway.ts` | Tinybird Local workspace token (must be a `tb local generate-tokens` token) |
+| `tinybird-local` | `TB_LOCAL_USER_TOKEN` | the user token from `.railway/railway.ts` | Tinybird Local user token |
+
+Every other variable is a `${{service.VAR}}` reference and survives generation. `scripts/template-config.sh <code>` prints a template's stored configuration so you can check it.
 
 OpenStatus is AGPL-3.0 licensed; this repository only contains deployment configuration (MIT).

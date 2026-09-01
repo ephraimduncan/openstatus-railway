@@ -12,7 +12,7 @@ export TB_VERSION_WARNING=0
 # API call to succeed instead.
 echo "Waiting for Tinybird Local at ${TB_HOST} ..."
 i=0
-until [ "$(curl -s -o /dev/null -w '%{http_code}' "${TB_HOST}/v0/workspace?token=${TB_TOKEN}")" = "200" ]; do
+until [ "$(curl -s -o /dev/null -w '%{http_code}' "${TB_HOST}/v1/workspace?token=${TB_TOKEN}")" = "200" ]; do
   i=$((i+1))
   if [ "$i" -gt 180 ]; then
     echo "Tinybird Local did not become ready in time (or TB_TOKEN is not accepted)" >&2

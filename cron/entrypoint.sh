@@ -21,4 +21,4 @@ CRONTAB
 
 echo "openstatus cron sidecar: hitting ${WORKFLOWS_URL}/cron/private-location-health every 5 minutes"
 /usr/local/bin/openstatus-cron /cron/private-location-health || true
-exec crond -f -l 2 -L /dev/stdout
+exec crond -f -l 8 -L /dev/stdout

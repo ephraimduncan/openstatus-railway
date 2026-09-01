@@ -17,7 +17,6 @@ link_dir() {
 
 link_dir /var/lib/clickhouse clickhouse
 link_dir /redis-data redis
-link_dir /var/lib/minio minio
 
-echo "tinybird-local: state persisted under $DATA_ROOT (clickhouse, redis, minio)"
+echo "tinybird-local: state persisted under $DATA_ROOT (clickhouse, redis)"
 exec /usr/bin/supervisord
