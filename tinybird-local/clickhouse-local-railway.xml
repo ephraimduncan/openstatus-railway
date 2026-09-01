@@ -1,0 +1,14 @@
+<!-- Applied to every `clickhouse local` helper Tinybird spawns (see clickhouse-wrapper.sh).
+     Without this each helper starts a
+     512-thread scheduler pool and a few of them exhaust Railway's 1000-PID cap. -->
+<clickhouse>
+    <background_schedule_pool_size>4</background_schedule_pool_size>
+    <background_buffer_flush_schedule_pool_size>1</background_buffer_flush_schedule_pool_size>
+    <background_message_broker_schedule_pool_size>1</background_message_broker_schedule_pool_size>
+    <background_distributed_schedule_pool_size>1</background_distributed_schedule_pool_size>
+    <background_fetches_pool_size>1</background_fetches_pool_size>
+    <background_move_pool_size>1</background_move_pool_size>
+    <background_common_pool_size>2</background_common_pool_size>
+    <max_thread_pool_size>64</max_thread_pool_size>
+    <max_io_thread_pool_size>4</max_io_thread_pool_size>
+</clickhouse>

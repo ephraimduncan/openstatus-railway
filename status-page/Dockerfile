@@ -1,7 +1,6 @@
 # OpenStatus status page with the self-host settings baked in.
 FROM ghcr.io/openstatushq/openstatus-status-page:latest
-ENV PORT=3000 \
-    HOSTNAME=:: \
+ENV HOSTNAME=:: \
     NODE_ENV=production \
     SELF_HOST=true \
     FLY_REGION=self-hosted \

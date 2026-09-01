@@ -1,0 +1,21 @@
+<!-- Railway caps containers at 1000 PIDs (threads count). ClickHouse sizes its
+     pools from the host's core count (48+ on Railway) and alone used ~700
+     threads, starving the Tinybird services. These overrides keep it small;
+     OpenStatus's workload is light. -->
+<clickhouse>
+    <max_thread_pool_size>200</max_thread_pool_size>
+    <max_thread_pool_free_size>16</max_thread_pool_free_size>
+    <thread_pool_queue_size>2000</thread_pool_queue_size>
+    <max_io_thread_pool_size>16</max_io_thread_pool_size>
+    <max_backups_io_thread_pool_size>4</max_backups_io_thread_pool_size>
+    <background_move_pool_size>2</background_move_pool_size>
+    <background_fetches_pool_size>2</background_fetches_pool_size>
+    <background_common_pool_size>4</background_common_pool_size>
+    <background_schedule_pool_size>8</background_schedule_pool_size>
+    <background_buffer_flush_schedule_pool_size>2</background_buffer_flush_schedule_pool_size>
+    <background_message_broker_schedule_pool_size>2</background_message_broker_schedule_pool_size>
+    <background_distributed_schedule_pool_size>2</background_distributed_schedule_pool_size>
+    <max_concurrent_queries>32</max_concurrent_queries>
+    <max_connections>256</max_connections>
+    <async_load_databases>false</async_load_databases>
+</clickhouse>
