@@ -85,6 +85,9 @@ export default defineRailway(() => {
       // apps must listen on 3000 (server-side tRPC calls localhost:3000).
       PORT: "3000",
       AUTH_SECRET: AUTH_SECRET,
+      // Auth.js builds magic links and OAuth callbacks from this URL; without it
+      // they point at the container's bind address.
+      AUTH_URL: "https://${{RAILWAY_PUBLIC_DOMAIN}}",
       NEXT_PUBLIC_URL: "https://${{RAILWAY_PUBLIC_DOMAIN}}",
       RESEND_API_KEY: "re_placeholder_not_configured",
       DATABASE_URL: libsql.env.DATABASE_URL,
@@ -102,6 +105,7 @@ export default defineRailway(() => {
     env: {
       PORT: dashboard.env.PORT,
       AUTH_SECRET: dashboard.env.AUTH_SECRET,
+      AUTH_URL: "https://${{RAILWAY_PUBLIC_DOMAIN}}",
       DATABASE_URL: libsql.env.DATABASE_URL,
       CRON_SECRET: workflows.env.CRON_SECRET,
       RESEND_API_KEY: dashboard.env.RESEND_API_KEY,

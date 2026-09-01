@@ -24,11 +24,14 @@ USAGE
 
 : "${DATABASE_URL:?DATABASE_URL is required}"
 
+# Feature limits for a self-hosted workspace (mirrors OpenStatus's seeded team workspace).
+LIMITS_JSON='{"monitors":50,"synthetic-checks":150000,"periodicity":["30s","1m","5m","10m","30m","1h"],"multi-region":true,"max-regions":35,"data-retention":"24 months","status-pages":20,"maintenance":true,"status-subscribers":true,"custom-domain":true,"password-protection":true,"email-domain-protection":true,"white-label":true,"notifications":true,"sms":true,"pagerduty":true,"notification-channels":50,"members":"Unlimited","audit-log":true,"regions":["ams","arn","atl","bog","bom","bos","cdg","den","dfw","ewr","eze","fra","gdl","gig","gru","hkg","iad","jnb","lax","lhr","mad","mia","nrt","ord","otp","phx","qro","scl","sea","sin","sjc","syd","waw","yul","yyz"]}'
+
 sql() {
   body=$(jq -cn --arg s "$1" '{statements: [$s]}')
   out=$(curl -sS -X POST "${DATABASE_URL%/}/" -H 'Content-Type: application/json' -d "$body")
-  if printf '%s' "$out" | jq -e '.[0].error' >/dev/null 2>&1; then
-    printf '%s\n' "$out" | jq -r '.[0].error.message' >&2
+  if ! printf '%s' "$out" | jq -e 'type == "array" and (.[0].error | not)' >/dev/null 2>&1; then
+    printf '%s\n' "$out" | jq -r 'if type == "array" then .[0].error.message else (.error // .) end' >&2
     return 1
   fi
   printf '%s' "$out" | jq -r '.[0].results as $r | if ($r.rows | length) == 0 then "ok (\($r.columns | length) columns, 0 rows)" else ([$r.columns] + $r.rows) | .[] | map(tostring) | join("\t") end'
@@ -42,7 +45,7 @@ case "$cmd" in
   users) sql "SELECT id, email, created_at FROM user ORDER BY id" ;;
   limits)
     ws="${1:?workspace id required}"
-    sql "UPDATE workspace SET limits = '{"monitors":50,"synthetic-checks":150000,"periodicity":["30s","1m","5m","10m","30m","1h"],"multi-region":true,"max-regions":35,"data-retention":"24 months","status-pages":20,"maintenance":true,"status-subscribers":true,"custom-domain":true,"password-protection":true,"email-domain-protection":true,"white-label":true,"notifications":true,"sms":true,"pagerduty":true,"notification-channels":50,"members":"Unlimited","audit-log":true,"regions":["ams","arn","atl","bog","bom","bos","cdg","den","dfw","ewr","eze","fra","gdl","gig","gru","hkg","iad","jnb","lax","lhr","mad","mia","nrt","ord","otp","phx","qro","scl","sea","sin","sjc","syd","waw","yul","yyz"]}' WHERE id = ${ws}"
+    sql "UPDATE workspace SET limits = '${LIMITS_JSON}' WHERE id = ${ws}"
     echo "limits updated for workspace ${ws}" ;;
   plan)
     ws="${1:?workspace id required}"; plan="${2:-team}"
