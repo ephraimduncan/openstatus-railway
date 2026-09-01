@@ -8,6 +8,8 @@ import { defineRailway, github, group, image, project, service, volume } from "r
 // RESEND_API_KEY (placeholder), dashboard.PORT (3000) and the two Tinybird Local tokens.
 const REPO = "ephraimduncan/openstatus-railway";
 const fromRepo = (dir: string) => github(REPO, { branch: "main", rootDirectory: dir });
+// Only rebuild a service when its own directory changes (README edits should not redeploy everything).
+const watch = (dir: string) => ({ watchPatterns: [`/${dir}/**`] });
 
 // Secrets of the reference project. In the published template these become ${{secret(32)}}.
 const AUTH_SECRET = "eMvhfqafUwDIwAOfOCjhKOwGoKIaqpQPMifhjTUjrkXqALrL";
@@ -28,6 +30,7 @@ export default defineRailway(() => {
   // ---------------------------------------------------------------- Data
   const libsql = service("libsql", {
     source: fromRepo("libsql"),
+    build: watch("libsql"),
     env: { DATABASE_URL: "http://${{RAILWAY_PRIVATE_DOMAIN}}:8080" },
     volumeMounts: { "/var/lib/sqld": volume("libsql-data", VOLUME) },
     deploy: { restartPolicyType: "ALWAYS" },
@@ -35,6 +38,7 @@ export default defineRailway(() => {
 
   const tinybird = service("tinybird-local", {
     source: fromRepo("tinybird-local"),
+    build: watch("tinybird-local"),
     env: {
       TB_LOCAL_WORKSPACE_TOKEN: TINYBIRD_WORKSPACE_TOKEN,
       TB_LOCAL_USER_TOKEN: TINYBIRD_USER_TOKEN,
@@ -52,6 +56,7 @@ export default defineRailway(() => {
 
   const tinybirdDeploy = service("tinybird-deploy", {
     source: fromRepo("tinybird-deploy"),
+    build: watch("tinybird-deploy"),
     env: {
       TB_HOST: tinybird.env.TINYBIRD_URL,
       TB_TOKEN: tinybird.env.TB_LOCAL_WORKSPACE_TOKEN,
@@ -62,6 +67,7 @@ export default defineRailway(() => {
   // ---------------------------------------------------------------- Apps
   const workflows = service("workflows", {
     source: fromRepo("workflows"),
+    build: watch("workflows"),
     env: {
       PORT: "${{dashboard.PORT}}",
       DATABASE_URL: libsql.env.DATABASE_URL,
@@ -80,6 +86,7 @@ export default defineRailway(() => {
 
   const dashboard = service("dashboard", {
     source: fromRepo("dashboard"),
+    build: watch("dashboard"),
     env: {
       // Railway injects PORT=8080 unless a PORT variable exists, and the Next
       // apps must listen on 3000 (server-side tRPC calls localhost:3000).
@@ -102,6 +109,7 @@ export default defineRailway(() => {
 
   const statusPage = service("status-page", {
     source: fromRepo("status-page"),
+    build: watch("status-page"),
     env: {
       PORT: dashboard.env.PORT,
       AUTH_SECRET: dashboard.env.AUTH_SECRET,
@@ -119,6 +127,7 @@ export default defineRailway(() => {
 
   const server = service("server", {
     source: fromRepo("server"),
+    build: watch("server"),
     env: {
       PORT: dashboard.env.PORT,
       DATABASE_URL: libsql.env.DATABASE_URL,
@@ -135,6 +144,7 @@ export default defineRailway(() => {
   // ---------------------------------------------------------------- Monitoring
   const ingest = service("private-location", {
     source: fromRepo("private-location"),
+    build: watch("private-location"),
     env: {
       DB_URL: libsql.env.DATABASE_URL,
       TINYBIRD_TOKEN: tinybird.env.TB_LOCAL_WORKSPACE_TOKEN,
@@ -159,6 +169,7 @@ export default defineRailway(() => {
 
   const cron = service("cron", {
     source: fromRepo("cron"),
+    build: watch("cron"),
     env: {
       CRON_SECRET: workflows.env.CRON_SECRET,
       WORKFLOWS_URL: workflows.env.WORKFLOWS_URL,
