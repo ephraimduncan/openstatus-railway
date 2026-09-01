@@ -18,13 +18,21 @@ This template deploys the complete openstatus stack inside one Railway project, 
 - Tinybird Local (ClickHouse-based analytics for check results, persisted on a Railway volume)
 - The openstatus container images published on GitHub Container Registry
 
+### Deployment Dependencies
+
+- [openstatus repository](https://github.com/openstatusHQ/openstatus)
+- [openstatus self-hosting guide](https://www.openstatus.dev/docs/guides/self-hosting-openstatus)
+- [Tinybird Local](https://www.tinybird.co/docs/forward/core-concepts/tinybird-local)
+- [libSQL server](https://github.com/tursodatabase/libsql)
+- [Template source and operations guide](https://github.com/ephraimduncan/openstatus-railway)
+
 ### Implementation Details
 
 Every service that needs fixed settings is built from a one-line Dockerfile in the template repository so that only secrets and cross-service references remain as variables. Tinybird Local is tuned to fit Railway's 1000-process limit per container. Operations that openstatus normally performs through its cloud (workspace limits, probe registration, status page hostnames) are exposed as commands:
 
 ```
-railway ssh -s cron -- os-admin setup <workspace-id>
-railway ssh -s cron -- os-admin page-domain <slug> <status-page-hostname>
+railway ssh -s cron -- os-admin setup WORKSPACE_ID
+railway ssh -s cron -- os-admin page-domain PAGE_SLUG STATUS_PAGE_HOSTNAME
 ```
 
 Source, upgrade notes and the full guide: https://github.com/ephraimduncan/openstatus-railway

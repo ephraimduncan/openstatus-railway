@@ -2,7 +2,7 @@
 
 Self-host [OpenStatus](https://github.com/openstatusHQ/openstatus) (status pages + uptime monitoring) with one click. Everything runs inside a single Railway project: the database, the dashboard, the status pages, the background workers, the monitoring probe, the scheduler and the Tinybird analytics engine. No external accounts are required to get a working instance.
 
-[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/new/template/PDBj0_?utm_medium=integration&utm_source=button&utm_campaign=openstatus)
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/new/template/openstatus?utm_medium=integration&utm_source=button&utm_campaign=openstatus)
 
 ## What gets deployed
 
