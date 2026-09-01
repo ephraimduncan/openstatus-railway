@@ -1,0 +1,77 @@
+#!/bin/sh
+# Admin toolbox for the self-hosted OpenStatus stack on Railway.
+# Run it from the cron service:  railway ssh -s cron -- os-admin <command>
+set -eu
+
+usage() {
+  cat <<'USAGE'
+os-admin <command>
+
+  workspaces                       list workspaces (id, slug, name, plan)
+  users                            list users (id, email)
+  setup <workspace-id>             unlock all features: limits + team plan + register the probe
+  limits <workspace-id>            set generous feature limits on a workspace
+  plan <workspace-id> [plan]       set the plan (default: team) for 10 years
+  register-probe <workspace-id> [name]
+                                   create a private location that uses this stack's probe (OPENSTATUS_KEY)
+  probes                           list private locations
+  pages                            list status pages (id, slug, custom_domain)
+  page-domain <slug> <hostname>    serve a status page on a hostname (Railway domain or custom domain)
+  tinybird-tokens                  print the Tinybird Local tokens
+  sql "<statement>"                run raw SQL against libSQL and print the result
+USAGE
+}
+
+: "${DATABASE_URL:?DATABASE_URL is required}"
+
+sql() {
+  body=$(jq -cn --arg s "$1" '{statements: [$s]}')
+  out=$(curl -sS -X POST "${DATABASE_URL%/}/" -H 'Content-Type: application/json' -d "$body")
+  if printf '%s' "$out" | jq -e '.[0].error' >/dev/null 2>&1; then
+    printf '%s\n' "$out" | jq -r '.[0].error.message' >&2
+    return 1
+  fi
+  printf '%s' "$out" | jq -r '.[0].results as $r | if ($r.rows | length) == 0 then "ok (\($r.columns | length) columns, 0 rows)" else ([$r.columns] + $r.rows) | .[] | map(tostring) | join("\t") end'
+}
+
+q() { printf '%s' "$1" | sed "s/'/''/g"; }
+
+cmd="${1:-help}"; shift || true
+case "$cmd" in
+  workspaces) sql "SELECT id, slug, name, plan, limits != '{}' AS has_limits FROM workspace ORDER BY id" ;;
+  users) sql "SELECT id, email, created_at FROM user ORDER BY id" ;;
+  limits)
+    ws="${1:?workspace id required}"
+    sql "UPDATE workspace SET limits = '{"monitors":50,"synthetic-checks":150000,"periodicity":["30s","1m","5m","10m","30m","1h"],"multi-region":true,"max-regions":35,"data-retention":"24 months","status-pages":20,"maintenance":true,"status-subscribers":true,"custom-domain":true,"password-protection":true,"email-domain-protection":true,"white-label":true,"notifications":true,"sms":true,"pagerduty":true,"notification-channels":50,"members":"Unlimited","audit-log":true,"regions":["ams","arn","atl","bog","bom","bos","cdg","den","dfw","ewr","eze","fra","gdl","gig","gru","hkg","iad","jnb","lax","lhr","mad","mia","nrt","ord","otp","phx","qro","scl","sea","sin","sjc","syd","waw","yul","yyz"]}' WHERE id = ${ws}"
+    echo "limits updated for workspace ${ws}" ;;
+  plan)
+    ws="${1:?workspace id required}"; plan="${2:-team}"
+    sql "UPDATE workspace SET plan = '$(q "$plan")', paid_until = strftime('%s','now') + 315360000, ends_at = NULL WHERE id = ${ws}"
+    echo "workspace ${ws} is now on the '${plan}' plan" ;;
+  register-probe)
+    ws="${1:?workspace id required}"; name="${2:-railway}"
+    : "${OPENSTATUS_KEY:?OPENSTATUS_KEY is required}"
+    existing=$(sql "SELECT id FROM private_location WHERE token = '$(q "$OPENSTATUS_KEY")'" | tail -n +2 | head -1 || true)
+    if [ -n "$existing" ]; then
+      echo "a private location with this stack's probe key already exists (id ${existing})"
+    else
+      sql "INSERT INTO private_location (name, token, status, workspace_id) VALUES ('$(q "$name")', '$(q "$OPENSTATUS_KEY")', 'active', ${ws})"
+      echo "private location '${name}' registered for workspace ${ws}; assign monitors to it in the dashboard"
+    fi ;;
+  probes) sql "SELECT id, name, status, workspace_id, datetime(last_seen_at, 'unixepoch') AS last_seen FROM private_location ORDER BY id" ;;
+  pages) sql "SELECT id, slug, custom_domain, workspace_id FROM page ORDER BY id" ;;
+  page-domain)
+    slug="${1:?page slug required}"; host="${2:?hostname required}"
+    host=$(printf '%s' "$host" | sed -e 's#^https\?://##' -e 's#/.*$##')
+    sql "UPDATE page SET custom_domain = '$(q "$host")' WHERE slug = '$(q "$slug")'"
+    echo "page '${slug}' is served at https://${host}/" ;;
+  setup)
+    ws="${1:?workspace id required}"
+    "$0" limits "$ws"; "$0" plan "$ws" team; "$0" register-probe "$ws" ;;
+  tinybird-tokens)
+    : "${TINYBIRD_URL:?TINYBIRD_URL is required}"
+    curl -sS "${TINYBIRD_URL%/}/tokens" | jq . ;;
+  sql) sql "${1:?statement required}" ;;
+  help|-h|--help) usage ;;
+  *) echo "unknown command: $cmd" >&2; usage >&2; exit 1 ;;
+esac
