@@ -13,7 +13,7 @@ Self-host [OpenStatus](https://github.com/openstatusHQ/openstatus) (status pages
 | `server` | `server/Dockerfile` | REST / ConnectRPC / MCP API (public) |
 | `workflows` | `workflows/Dockerfile` | Background jobs, alerting, cron endpoints (volume) |
 | `private-location` | `private-location/Dockerfile` | Ingest server: receives check results from probes (public, for extra probes) |
-| `probe` | `ghcr.io/openstatushq/private-location` | The monitoring probe that runs your checks |
+| `probe`, `probe-us-west`, `probe-eu-west`, `probe-asia` | `ghcr.io/openstatushq/private-location` | Monitoring probes in Virginia, California, Amsterdam and Singapore |
 | `cron` | `cron/Dockerfile` | Scheduler sidecar + `os-admin` toolbox |
 | `libsql` | `libsql/Dockerfile` (upstream `libsql-server` image) | Application database (volume) |
 | `db-migrate` | `ghcr.io/openstatushq/openstatus-db-migrate` | One-shot schema migration (exits when done) |
@@ -42,7 +42,7 @@ railway ssh -s cron -- os-admin workspaces        # find your workspace id (usua
 railway ssh -s cron -- os-admin setup 1           # limits + team plan + registers the probe
 ```
 
-`setup` creates a private location named `railway` that uses the bundled `probe` service. Assign monitors to it when you create them; the probe picks up new monitors within 10 minutes (restart the `probe` service to skip the wait).
+`setup` registers the four bundled probes as private locations (`railway-us-east`, `railway-us-west`, `railway-eu-west`, `railway-asia`) and attaches every existing monitor to all of them. When you create a new monitor, tick the locations you want under **Private Locations**, or run `os-admin assign-all <workspace-id>` to attach everything to everything. Probes pick up changes within 10 minutes (redeploy a probe to skip the wait).
 
 Prefer the UI? Create a private location under **Settings → Private Locations**, copy its token, and set it as `OPENSTATUS_KEY` on the `probe` service. Railway redeploys the probe automatically.
 
@@ -99,7 +99,8 @@ os-admin workspaces | users | probes | pages
 os-admin setup <workspace-id>
 os-admin limits <workspace-id>
 os-admin plan <workspace-id> [free|starter|team|scale]
-os-admin register-probe <workspace-id> [name]
+os-admin register-probe <workspace-id>
+os-admin assign-all <workspace-id>
 os-admin page-domain <slug> <hostname>
 os-admin tinybird-tokens
 os-admin sql "<statement>"
@@ -128,7 +129,7 @@ Generate the template from the project (`railway templates create --project <id>
 | `dashboard` | `AUTH_SECRET` | `${{secret(32)}}` | Auth.js secret, generated for you |
 | `dashboard` | `RESEND_API_KEY` | `re_placeholder_not_configured` | Optional. Set a real Resend key to send notification emails; the magic link is printed in the dashboard logs either way |
 | `workflows` | `CRON_SECRET` | `${{secret(32)}}` | Shared secret between the apps, the ingest server and the cron sidecar, generated for you |
-| `probe` | `OPENSTATUS_KEY` | `${{secret(32)}}` | Private location token, generated for you; `os-admin setup` registers it |
+| `probe` | `OPENSTATUS_KEY` | `${{secret(32)}}` | Private location token, generated for you; the regional probes derive theirs from it and `os-admin setup` registers all of them |
 | `tinybird-local` | `TB_LOCAL_WORKSPACE_TOKEN` | the workspace token from `.railway/railway.ts` | Tinybird Local workspace token (must be a `tb local generate-tokens` token) |
 | `tinybird-local` | `TB_LOCAL_USER_TOKEN` | the user token from `.railway/railway.ts` | Tinybird Local user token |
 

@@ -158,6 +158,9 @@ export default defineRailway(() => {
     deploy: { restartPolicyType: "ALWAYS" },
   });
 
+  // One probe per Railway region so monitors can be checked from around the
+  // world. Extra probes derive their key from the first one, so the template
+  // needs a single generated secret.
   const probe = service("probe", {
     source: image("ghcr.io/openstatushq/private-location:latest"),
     env: {
@@ -166,6 +169,19 @@ export default defineRailway(() => {
     },
     deploy: { restartPolicyType: "ALWAYS" },
   });
+  const regionalProbe = (name: string, region: string, suffix: string) =>
+    service(name, {
+      source: image("ghcr.io/openstatushq/private-location:latest"),
+      regions: { [region]: 1 },
+      env: {
+        OPENSTATUS_INGEST_URL: ingest.env.INGEST_URL,
+        OPENSTATUS_KEY: `\${{probe.OPENSTATUS_KEY}}-${suffix}`,
+      },
+      deploy: { restartPolicyType: "ALWAYS" },
+    });
+  const probeUsWest = regionalProbe("probe-us-west", "us-west2", "us-west");
+  const probeEuWest = regionalProbe("probe-eu-west", "europe-west4-drams3a", "eu-west");
+  const probeAsia = regionalProbe("probe-asia", "asia-southeast1-eqsg3a", "asia");
 
   const cron = service("cron", {
     source: fromRepo("cron"),
@@ -175,7 +191,8 @@ export default defineRailway(() => {
       WORKFLOWS_URL: workflows.env.WORKFLOWS_URL,
       DATABASE_URL: libsql.env.DATABASE_URL,
       TINYBIRD_URL: tinybird.env.TINYBIRD_URL,
-      OPENSTATUS_KEY: probe.env.OPENSTATUS_KEY,
+      PROBE_KEYS:
+        "railway-us-east=${{probe.OPENSTATUS_KEY}},railway-us-west=${{probe-us-west.OPENSTATUS_KEY}},railway-eu-west=${{probe-eu-west.OPENSTATUS_KEY}},railway-asia=${{probe-asia.OPENSTATUS_KEY}}",
     },
     deploy: { restartPolicyType: "ALWAYS" },
   });
@@ -185,7 +202,7 @@ export default defineRailway(() => {
       group("Data", [libsql, tinybird]),
       group("Jobs", [dbMigrate, tinybirdDeploy]),
       group("Apps", [dashboard, statusPage, server, workflows]),
-      group("Monitoring", [ingest, probe, cron]),
+      group("Monitoring", [ingest, probe, probeUsWest, probeEuWest, probeAsia, cron]),
     ],
   });
 });

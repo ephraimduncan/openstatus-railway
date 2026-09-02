@@ -4,12 +4,12 @@ openstatus is an open-source status page and uptime monitoring platform. It runs
 
 ## About Hosting openstatus
 
-This template deploys the complete openstatus stack inside one Railway project, with nothing running outside it. It creates the dashboard, the public status page, the API server, the workflows worker, a libSQL database on a volume, a Tinybird Local analytics engine on a volume, the ingest server and a monitoring probe, a cron sidecar that drives scheduled jobs, and two one-shot jobs that migrate the database and load the analytics schema. Secrets are generated at deploy time. After the first deploy you open the dashboard, take the magic link from its logs, create your workspace, and run one `os-admin setup` command from the cron service to unlock every feature and register the probe. Status pages are mapped to a hostname with `os-admin page-domain`.
+This template deploys the complete openstatus stack inside one Railway project, with nothing running outside it. It creates the dashboard, the public status page, the API server, the workflows worker, a libSQL database on a volume, a Tinybird Local analytics engine on a volume, the ingest server and four monitoring probes (Virginia, California, Amsterdam, Singapore), a cron sidecar that drives scheduled jobs, and two one-shot jobs that migrate the database and load the analytics schema. Secrets are generated at deploy time. After the first deploy you open the dashboard, take the magic link from its logs, create your workspace, and run one `os-admin setup` command from the cron service to unlock every feature and register the probe. Status pages are mapped to a hostname with `os-admin page-domain`.
 
 ## Common Use Cases
 
 - A branded public status page for your product with incident and maintenance communication
-- Uptime and latency monitoring of internal services that public monitoring vendors cannot reach
+- Uptime and latency monitoring from four continents, including internal services that public vendors cannot reach
 - Keeping monitoring data on your own infrastructure for compliance or cost reasons
 
 ## Dependencies for openstatus Hosting
