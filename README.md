@@ -33,7 +33,11 @@ Tinybird Local is the heaviest service (about 1 GB of RAM at rest). Plan for a H
 3. The link is not emailed. Open the `dashboard` service logs and copy the line that starts with `>>> Magic Link:` into your browser.
 4. Create your workspace.
 
-## Unlock features and connect the probe
+## Spread the probes across regions
+
+The four probes deploy into your project's default region. Move three of them once, in each service's **Settings → Deploy → Region**: `probe-us-west` to US West (California), `probe-eu-west` to EU West (Amsterdam), `probe-asia` to Southeast Asia (Singapore). Railway redeploys them in place. `probe` stays where it is.
+
+## Unlock features and connect the probes
 
 Self-hosted workspaces start with empty limits. Run the toolbox once from the `cron` service (Railway CLI, or the service's shell in the dashboard):
 
@@ -133,6 +137,6 @@ Generate the template from the project (`railway templates create --project <id>
 | `tinybird-local` | `TB_LOCAL_WORKSPACE_TOKEN` | the workspace token from `.railway/railway.ts` | Tinybird Local workspace token (must be a `tb local generate-tokens` token) |
 | `tinybird-local` | `TB_LOCAL_USER_TOKEN` | the user token from `.railway/railway.ts` | Tinybird Local user token |
 
-Every other variable is a `${{service.VAR}}` reference and survives generation. Railway also drops the region of each service, so set `probe-us-west` to US West (California), `probe-eu-west` to EU West (Amsterdam) and `probe-asia` to Southeast Asia (Singapore) in their service settings in the composer; `probe` stays in the project's default region. `scripts/template-config.sh <code>` prints a template's stored configuration so you can check it. [`composer-values.md`](composer-values.md) has every block ready to paste.
+Every other variable is a `${{service.VAR}}` reference and survives generation. The template cannot pin a region per service, so after deploying, move `probe-us-west`, `probe-eu-west` and `probe-asia` to their regions (see First login below). `scripts/template-config.sh <code>` prints a template's stored configuration so you can check it. [`composer-values.md`](composer-values.md) has every block ready to paste.
 
 OpenStatus is AGPL-3.0 licensed; this repository only contains deployment configuration (MIT).
