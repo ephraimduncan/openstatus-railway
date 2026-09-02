@@ -112,8 +112,9 @@ export default defineRailway(() => {
     build: watch("status-page"),
     env: {
       PORT: dashboard.env.PORT,
+      // No AUTH_URL here: Auth.js would force every request's origin to it and
+      // Next.js would then proxy custom-domain rewrites externally.
       AUTH_SECRET: dashboard.env.AUTH_SECRET,
-      AUTH_URL: "https://${{RAILWAY_PUBLIC_DOMAIN}}",
       DATABASE_URL: libsql.env.DATABASE_URL,
       CRON_SECRET: workflows.env.CRON_SECRET,
       RESEND_API_KEY: dashboard.env.RESEND_API_KEY,
