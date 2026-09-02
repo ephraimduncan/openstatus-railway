@@ -60,6 +60,14 @@ railway ssh -s cron -- os-admin page-domain <slug> <status-page-domain>
 
 `<status-page-domain>` is the Railway domain of the `status-page` service, or a custom domain you added to that service under **Settings → Networking**. One hostname per page; for several pages add several custom domains (wildcard domains are supported by Railway) and map each one. The dashboard's "custom domain" form is wired to Vercel and does not work self-hosted, which is why the toolbox exists.
 
+## Page icon
+
+The icon upload in the status page form goes to Vercel Blob storage, which is not part of this stack, so it fails with "No token found". Host the image anywhere (your own site works) and point the page at it:
+
+```bash
+railway ssh -s cron -- os-admin page-icon <slug> https://example.com/icon.svg
+```
+
 ## Optional integrations
 
 Add these variables to the `dashboard` service and Railway redeploys it:
@@ -106,6 +114,7 @@ os-admin plan <workspace-id> [free|starter|team|scale]
 os-admin register-probe <workspace-id>
 os-admin assign-all <workspace-id>
 os-admin page-domain <slug> <hostname>
+os-admin page-icon <slug> <url>
 os-admin tinybird-tokens
 os-admin sql "<statement>"
 ```

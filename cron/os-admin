@@ -17,6 +17,7 @@ os-admin <command>
   probes                           list private locations
   pages                            list status pages (id, slug, custom_domain)
   page-domain <slug> <hostname>    serve a status page on a hostname (Railway domain or custom domain)
+  page-icon <slug> <url>           set a status page icon from a URL (uploads need Vercel Blob, which is not bundled)
   tinybird-tokens                  print the Tinybird Local tokens
   sql "<statement>"                run raw SQL against libSQL and print the result
 USAGE
@@ -77,6 +78,10 @@ case "$cmd" in
     host=$(printf '%s' "$host" | sed -e 's#^https\?://##' -e 's#/.*$##')
     sql "UPDATE page SET custom_domain = '$(q "$host")' WHERE slug = '$(q "$slug")'"
     echo "page '${slug}' is served at https://${host}/" ;;
+  page-icon)
+    slug="${1:?page slug required}"; url="${2:?image url required (png, ico or svg)}"
+    sql "UPDATE page SET icon = '$(q "$url")' WHERE slug = '$(q "$slug")'"
+    echo "page '${slug}' icon set to ${url}" ;;
   setup)
     ws="${1:?workspace id required}"
     "$0" limits "$ws"; "$0" plan "$ws" team; "$0" register-probe "$ws"; "$0" assign-all "$ws" ;;
