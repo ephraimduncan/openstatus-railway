@@ -17,8 +17,9 @@ chmod +x /usr/local/bin/openstatus-cron
 
 cat > /etc/crontabs/root <<CRONTAB
 */5 * * * * /usr/local/bin/openstatus-cron /cron/private-location-health
+*/10 * * * * /usr/local/bin/openstatus-cron /cron/external-status
 CRONTAB
 
-echo "openstatus cron sidecar: hitting ${WORKFLOWS_URL}/cron/private-location-health every 5 minutes"
+echo "openstatus cron sidecar: private-location-health every 5 min, external-status every 10 min via ${WORKFLOWS_URL}"
 /usr/local/bin/openstatus-cron /cron/private-location-health || true
 exec crond -f -l 8 -L /dev/stdout
