@@ -133,6 +133,6 @@ Generate the template from the project (`railway templates create --project <id>
 | `tinybird-local` | `TB_LOCAL_WORKSPACE_TOKEN` | the workspace token from `.railway/railway.ts` | Tinybird Local workspace token (must be a `tb local generate-tokens` token) |
 | `tinybird-local` | `TB_LOCAL_USER_TOKEN` | the user token from `.railway/railway.ts` | Tinybird Local user token |
 
-Every other variable is a `${{service.VAR}}` reference and survives generation. Railway also drops the region of each service, so set `probe-us-west` to US West (California), `probe-eu-west` to EU West (Amsterdam) and `probe-asia` to Southeast Asia (Singapore) in their service settings in the composer; `probe` stays in the project's default region. `scripts/template-config.sh <code>` prints a template's stored configuration so you can check it.
+Every other variable is a `${{service.VAR}}` reference and survives generation. Railway also drops the region of each service, so set `probe-us-west` to US West (California), `probe-eu-west` to EU West (Amsterdam) and `probe-asia` to Southeast Asia (Singapore) in their service settings in the composer; `probe` stays in the project's default region. `scripts/template-config.sh <code>` prints a template's stored configuration so you can check it. [`composer-values.md`](composer-values.md) has every block ready to paste.
 
 OpenStatus is AGPL-3.0 licensed; this repository only contains deployment configuration (MIT).
