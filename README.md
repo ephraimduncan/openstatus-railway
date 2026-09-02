@@ -137,6 +137,6 @@ Generate the template from the project (`railway templates create --project <id>
 | `tinybird-local` | `TB_LOCAL_WORKSPACE_TOKEN` | the workspace token from `.railway/railway.ts` | Tinybird Local workspace token (must be a `tb local generate-tokens` token) |
 | `tinybird-local` | `TB_LOCAL_USER_TOKEN` | the user token from `.railway/railway.ts` | Tinybird Local user token |
 
-Every other variable is a `${{service.VAR}}` reference and survives generation. The template cannot pin a region per service, so after deploying, move `probe-us-west`, `probe-eu-west` and `probe-asia` to their regions (see First login below). `scripts/template-config.sh <code>` prints a template's stored configuration so you can check it. [`composer-values.md`](composer-values.md) has every block ready to paste.
+Every other variable is a `${{service.VAR}}` reference and survives generation. Make sure `status-page` has no `AUTH_URL` variable (only `dashboard` does); see `composer-values.md`. The template cannot pin a region per service, so after deploying, move `probe-us-west`, `probe-eu-west` and `probe-asia` to their regions (see First login below). `scripts/template-config.sh <code>` prints a template's stored configuration so you can check it. [`composer-values.md`](composer-values.md) has every block ready to paste.
 
 OpenStatus is AGPL-3.0 licensed; this repository only contains deployment configuration (MIT).

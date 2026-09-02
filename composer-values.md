@@ -46,6 +46,10 @@ TB_LOCAL_USER_TOKEN="p.eyJ1IjogIjI2OTVhNDEzLTllMTctNDE1YS1hOWFmLTJmMzMxZWMyYzViO
 TB_LOCAL_WORKSPACE_TOKEN="p.eyJ1IjogIjIzZTE0YmFkLWFlYmQtNGVjMi04MTVkLTMyYmI0ZDllNmI0ZCIsICJpZCI6ICJlZjc2NTEwMi0yM2Y1LTQ5OGQtYTMyZS0zMGJkMWRmNzBkNTciLCAiaG9zdCI6IG51bGx9.crYr6k4p1CXjb4bJ3grPMmRDOz4fIoU-fgdJ420bnvo"
 ```
 
+## Must NOT be set
+
+`status-page` must not have an `AUTH_URL` variable. Auth.js would force every request's origin to it and Next.js would then proxy custom-domain rewrites externally, which fails on Railway. If the generated draft contains `status-page.AUTH_URL`, delete it. (`dashboard.AUTH_URL` stays.)
+
 ## Regions (service settings, not variables)
 
 | Service | Region |
