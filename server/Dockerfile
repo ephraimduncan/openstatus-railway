@@ -1,6 +1,5 @@
 # OpenStatus API server with the self-host settings baked in.
-ARG OPENSTATUS_IMAGE=ghcr.io/openstatushq/openstatus-server:latest
-FROM ${OPENSTATUS_IMAGE}
+FROM ghcr.io/ephraimduncan/openstatus-server:de39e0e66cf6fca1c5f108ebfd7a57508dc3e787
 ENV NODE_ENV=production \
     SELF_HOST=true \
     FLY_REGION=self-hosted \

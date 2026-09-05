@@ -8,15 +8,15 @@ Self-host [OpenStatus](https://github.com/openstatusHQ/openstatus) (status pages
 
 | Service | Built from | Role |
 |---|---|---|
-| `dashboard` | `dashboard/Dockerfile` (upstream `openstatus-dashboard` image + self-host settings) | Admin UI (public) |
+| `dashboard` | `dashboard/Dockerfile` (fork image + self-host settings) | Admin UI (public) |
 | `status-page` | `status-page/Dockerfile` | Public status pages |
 | `server` | `server/Dockerfile` | REST / ConnectRPC / MCP API (public) |
 | `workflows` | `workflows/Dockerfile` | Background jobs, alerting, cron endpoints (volume) |
 | `private-location` | `private-location/Dockerfile` | Ingest server: receives check results from probes (public, for extra probes) |
-| `probe`, `probe-us-west`, `probe-eu-west`, `probe-asia` | `ghcr.io/openstatushq/private-location` | Monitoring probes in Virginia, California, Amsterdam and Singapore |
+| `probe`, `probe-us-west`, `probe-eu-west`, `probe-asia` | `probe/Dockerfile` | Monitoring probes in Virginia, California, Amsterdam and Singapore |
 | `cron` | `cron/Dockerfile` | Scheduler sidecar + `os-admin` toolbox |
 | `libsql` | `libsql/Dockerfile` (upstream `libsql-server` image) | Application database (volume) |
-| `db-migrate` | `ghcr.io/openstatushq/openstatus-db-migrate` | One-shot schema migration (exits when done) |
+| `db-migrate` | `db-migrate/Dockerfile` | One-shot schema migration (exits when done) |
 | `tinybird-local` | `tinybird-local/Dockerfile` (upstream `tinybird-local` image) | Time-series analytics (ClickHouse, volume) |
 | `tinybird-deploy` | `tinybird-deploy/Dockerfile` | One-shot job that loads the OpenStatus analytics schema |
 
@@ -80,39 +80,29 @@ Add these variables to the `dashboard` service and Railway redeploys it:
 
 ## Upgrading
 
-The OpenStatus images track the `latest` tag. To upgrade:
+The application source lives in the [OpenStatus fork](https://github.com/ephraimduncan/openstatus/tree/fix/self-hosted-reliability). Repairs are normal source commits in that repository.
 
-1. Redeploy `db-migrate` and wait for **Completed**.
-2. Redeploy `dashboard`, `status-page`, `server`, `workflows`, `private-location` and `probe`.
-3. Redeploy `tinybird-deploy` so new analytics pipes are created.
+The fork's **Publish Docker Images** workflow publishes seven `linux/amd64` images to `ghcr.io/ephraimduncan`. Each image tag is the full source commit ID. The seven service Dockerfiles and the analytics source in `tinybird-deploy/Dockerfile` use the same commit.
 
-### Build the repaired source
+To prepare a source release:
 
-The default Railway template still uses upstream images. The repairs in `patches/openstatus.patch` use images built from the patched source:
+1. Push the source changes to the fork's `fix/self-hosted-reliability` branch.
+2. In GitHub, open **Actions → Publish Docker Images** and wait for all seven image jobs to complete.
+3. Confirm that all seven packages allow public access. If a package is private, select **Public** under **Package settings → Change visibility**.
+4. Update the image tags in `dashboard`, `status-page`, `server`, `workflows`, `private-location`, `db-migrate`, and `probe`.
+5. Set `OPENSTATUS_REF` in `tinybird-deploy/Dockerfile` to the same source commit.
+6. Rebuild the application wrappers and the analytics deployment image.
 
-```bash
-sh scripts/prepare-upstream.sh ../openstatus-patched
-sh scripts/build-upstream.sh ../openstatus-patched workflows
-```
+To upgrade an existing Railway project:
 
-Run the build command for `dashboard`, `status-page`, `server`, `private-location`, `probe`, `db-migrate`, and `tinybird-deploy` also. Each command makes a local `openstatus-railway-<target>:local` image for `linux/amd64`. Set `PLATFORM` to build for a different platform. The scripts do not push images or change Railway.
+1. Make a backup of the database.
+2. Deploy `db-migrate` from its Dockerfile and run it to completion.
+3. Deploy the new `dashboard`, `status-page`, `server`, `workflows`, and `private-location` images.
+4. Deploy all four probe services from `probe/Dockerfile`.
+5. Deploy `tinybird-deploy` and wait for completion.
+6. Deploy the cron image after the database migrations and workflows service.
 
-To deploy the repairs:
-
-1. Publish the images to your registry.
-2. Make a backup of the database.
-3. Configure `db-migrate` to use its new image.
-4. Run `db-migrate` to completion.
-5. Configure the application services to use their new images.
-6. Deploy the applications.
-7. Configure all four probe services to use the new `probe` image.
-8. Deploy the probes.
-9. Configure `tinybird-deploy` to use its new image.
-10. Run `tinybird-deploy` to apply the analytics changes.
-
-Do not replace these images with upstream `latest` if the patch is still necessary.
-
-The cron image schedules monthly uptime storage at 02:00 UTC on days 1–7. Deploy the repaired workflows service and database migrations before this cron image.
+The cron image schedules monthly uptime storage at 02:00 UTC on days 1 through 7. Upstream `latest` images do not contain the fork's repairs.
 
 ## Rotate the Tinybird tokens
 
@@ -176,4 +166,4 @@ Generate the template from the project (`railway templates create --project <id>
 
 Every other variable is a `${{service.VAR}}` reference and survives generation. Make sure `status-page` has no `AUTH_URL` variable (only `dashboard` does); see `composer-values.md`. The template cannot pin a region per service, so after deploying, move `probe-us-west`, `probe-eu-west` and `probe-asia` to their regions (see First login below). `scripts/template-config.sh <code>` prints a template's stored configuration so you can check it. [`composer-values.md`](composer-values.md) has every block ready to paste.
 
-OpenStatus and the source changes in `patches/openstatus.patch` use the AGPL-3.0 license. The deployment configuration uses the MIT license.
+OpenStatus and the fork's application source use the AGPL-3.0 license. This repository contains deployment configuration under the MIT license.
