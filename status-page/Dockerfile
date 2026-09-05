@@ -1,5 +1,6 @@
 # OpenStatus status page with the self-host settings baked in.
-FROM ghcr.io/openstatushq/openstatus-status-page:latest
+ARG OPENSTATUS_IMAGE=ghcr.io/openstatushq/openstatus-status-page:latest
+FROM ${OPENSTATUS_IMAGE}
 ENV HOSTNAME=:: \
     NODE_ENV=production \
     SELF_HOST=true \

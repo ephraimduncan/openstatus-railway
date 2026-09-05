@@ -86,6 +86,34 @@ The OpenStatus images track the `latest` tag. To upgrade:
 2. Redeploy `dashboard`, `status-page`, `server`, `workflows`, `private-location` and `probe`.
 3. Redeploy `tinybird-deploy` so new analytics pipes are created.
 
+### Build the repaired source
+
+The default Railway template still uses upstream images. The repairs in `patches/openstatus.patch` use images built from the patched source:
+
+```bash
+sh scripts/prepare-upstream.sh ../openstatus-patched
+sh scripts/build-upstream.sh ../openstatus-patched workflows
+```
+
+Run the build command for `dashboard`, `status-page`, `server`, `private-location`, `probe`, `db-migrate`, and `tinybird-deploy` also. Each command makes a local `openstatus-railway-<target>:local` image for `linux/amd64`. Set `PLATFORM` to build for a different platform. The scripts do not push images or change Railway.
+
+To deploy the repairs:
+
+1. Publish the images to your registry.
+2. Make a backup of the database.
+3. Configure `db-migrate` to use its new image.
+4. Run `db-migrate` to completion.
+5. Configure the application services to use their new images.
+6. Deploy the applications.
+7. Configure all four probe services to use the new `probe` image.
+8. Deploy the probes.
+9. Configure `tinybird-deploy` to use its new image.
+10. Run `tinybird-deploy` to apply the analytics changes.
+
+Do not replace these images with upstream `latest` if the patch is still necessary.
+
+The cron image schedules monthly uptime storage at 02:00 UTC on days 1–7. Deploy the repaired workflows service and database migrations before this cron image.
+
 ## Rotate the Tinybird tokens
 
 Generate a new pair and set them on the `tinybird-local` service (every consumer references those variables):
@@ -148,4 +176,4 @@ Generate the template from the project (`railway templates create --project <id>
 
 Every other variable is a `${{service.VAR}}` reference and survives generation. Make sure `status-page` has no `AUTH_URL` variable (only `dashboard` does); see `composer-values.md`. The template cannot pin a region per service, so after deploying, move `probe-us-west`, `probe-eu-west` and `probe-asia` to their regions (see First login below). `scripts/template-config.sh <code>` prints a template's stored configuration so you can check it. [`composer-values.md`](composer-values.md) has every block ready to paste.
 
-OpenStatus is AGPL-3.0 licensed; this repository only contains deployment configuration (MIT).
+OpenStatus and the source changes in `patches/openstatus.patch` use the AGPL-3.0 license. The deployment configuration uses the MIT license.
