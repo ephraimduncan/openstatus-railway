@@ -16,11 +16,11 @@ This template deploys the complete openstatus stack inside one Railway project, 
 
 - libSQL server (application database, persisted on a Railway volume)
 - Tinybird Local (ClickHouse-based analytics for check results, persisted on a Railway volume)
-- The openstatus container images published on GitHub Container Registry
+- The OpenStatus fork images published on GitHub Container Registry
 
 ### Deployment Dependencies
 
-- [openstatus repository](https://github.com/openstatusHQ/openstatus)
+- [OpenStatus source fork](https://github.com/ephraimduncan/openstatus/tree/fix/self-hosted-reliability)
 - [openstatus self-hosting guide](https://www.openstatus.dev/docs/guides/self-hosting-openstatus)
 - [Tinybird Local](https://www.tinybird.co/docs/forward/core-concepts/tinybird-local)
 - [libSQL server](https://github.com/tursodatabase/libsql)

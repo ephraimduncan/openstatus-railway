@@ -1,0 +1,1 @@
+FROM ghcr.io/ephraimduncan/openstatus-probe:de39e0e66cf6fca1c5f108ebfd7a57508dc3e787

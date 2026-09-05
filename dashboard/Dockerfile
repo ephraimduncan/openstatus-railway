@@ -1,6 +1,6 @@
 # OpenStatus dashboard with the self-host settings baked in, so the Railway
 # template only carries secrets and cross-service references.
-FROM ghcr.io/openstatushq/openstatus-dashboard:latest
+FROM ghcr.io/ephraimduncan/openstatus-dashboard:de39e0e66cf6fca1c5f108ebfd7a57508dc3e787
 ENV HOSTNAME=:: \
     NODE_ENV=production \
     SELF_HOST=true \
