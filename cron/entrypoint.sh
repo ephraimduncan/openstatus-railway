@@ -9,17 +9,19 @@ set -eu
 cat > /usr/local/bin/openstatus-cron <<SCRIPT
 #!/bin/sh
 path="\$1"
-: > /tmp/cron.out
-code=\$(curl -sS -o /tmp/cron.out -w '%{http_code}' -H "Authorization: ${CRON_SECRET}" "${WORKFLOWS_URL}\${path}" 2>/tmp/cron.err) || code="000"
-echo "\$(date -u +%FT%TZ) \${path} -> \${code} \$(head -c 300 /tmp/cron.out) \$(head -c 200 /tmp/cron.err)"
+code=\$(curl --fail --silent --show-error --connect-timeout 10 --max-time 60 -o /dev/null -w '%{http_code}' -H "Authorization: ${CRON_SECRET}" "${WORKFLOWS_URL}\${path}") && result=0 || result=\$?
+echo "\$(date -u +%FT%TZ) \${path} -> HTTP \${code} (exit \${result})"
+exit "\${result}"
 SCRIPT
 chmod +x /usr/local/bin/openstatus-cron
 
 cat > /etc/crontabs/root <<CRONTAB
 */5 * * * * /usr/local/bin/openstatus-cron /cron/private-location-health
 */10 * * * * /usr/local/bin/openstatus-cron /cron/external-status
+0 2 1-7 * * /usr/local/bin/openstatus-cron /cron/uptime-freeze
 CRONTAB
 
-echo "openstatus cron sidecar: private-location-health every 5 min, external-status every 10 min via ${WORKFLOWS_URL}"
+export TZ=UTC
+echo "openstatus cron sidecar: health every 5 min, external status every 10 min, uptime freeze at 02:00 UTC on days 1-7"
 /usr/local/bin/openstatus-cron /cron/private-location-health || true
 exec crond -f -l 8 -L /dev/stdout
