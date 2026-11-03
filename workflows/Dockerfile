@@ -1,6 +1,6 @@
 # OpenStatus workflows with the self-host settings baked in. Runs as root so
 # the libSQL embedded replica can write to the Railway volume at /app/data.
-FROM ghcr.io/openstatushq/openstatus-workflows:latest
+FROM ghcr.io/openstatushq/openstatus-workflows:f8057fb
 ENV NODE_ENV=production \
     SELF_HOST=true \
     FLY_REGION=self-hosted \

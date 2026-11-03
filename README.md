@@ -82,11 +82,18 @@ Add these variables to the `dashboard` service and Railway redeploys it:
 
 ## Upgrading
 
-The OpenStatus images track the `latest` tag. To upgrade:
+All services use one OpenStatus version: commit `f8057fb` of [openstatusHQ/openstatus](https://github.com/openstatusHQ/openstatus). The probe image has only a `latest` tag, thus `PROBE_IMAGE` in `.railway/railway.ts` selects the build from the same week by its digest.
 
-1. Redeploy `db-migrate` and wait for **Completed**.
-2. Redeploy `dashboard`, `status-page`, `server`, `workflows`, `private-location` and `probe`.
-3. Redeploy `tinybird-deploy` so new analytics pipes are created.
+To upgrade OpenStatus:
+
+1. Select a commit that has a tag in the [`openstatus-dashboard` image tags](https://github.com/openstatusHQ/openstatus/pkgs/container/openstatus-dashboard).
+2. Change the tag in `dashboard/Dockerfile`, `status-page/Dockerfile`, `server/Dockerfile`, `workflows/Dockerfile` and `private-location/Dockerfile`.
+3. Change the `db-migrate` image tag and `PROBE_IMAGE` in `.railway/railway.ts`.
+4. Set `OPENSTATUS_REF` in `tinybird-deploy/Dockerfile` to the full commit SHA.
+5. Run `railway config apply` and wait until `db-migrate` shows **Completed**.
+6. Push the commit. Railway rebuilds the applications, and `tinybird-deploy` loads the new analytics schema.
+
+Do step 5 before step 6, because the new application code uses the new database tables.
 
 `tinybird-local/Dockerfile` changes files in the upstream Tinybird Local image, and the upstream `latest` tag changes frequently. Thus, the Dockerfile uses one known digest of the image. To use a newer Tinybird Local, change the digest in `tinybird-local/Dockerfile`.
 

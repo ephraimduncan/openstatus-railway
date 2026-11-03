@@ -1,5 +1,5 @@
 # OpenStatus API server with the self-host settings baked in.
-FROM ghcr.io/openstatushq/openstatus-server:latest
+FROM ghcr.io/openstatushq/openstatus-server:f8057fb
 ENV NODE_ENV=production \
     SELF_HOST=true \
     FLY_REGION=self-hosted \

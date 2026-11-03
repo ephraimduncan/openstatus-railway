@@ -26,6 +26,10 @@ const TINYBIRD_USER_TOKEN = "p.eyJ1IjogIjI2OTVhNDEzLTllMTctNDE1YS1hOWFmLTJmMzMxZ
 // Mirrored here so `railway config plan` does not propose shrinking them.
 const VOLUME = { region: "us-east4-eqdc4a", sizeMB: 50000 };
 
+// The probe image has only a `latest` tag. Thus, this digest selects one build.
+const PROBE_IMAGE =
+  "ghcr.io/openstatushq/private-location@sha256:60b10bbe1875ed2148b44eef49e418005ded3537d196dd3ca32dc50382f3d8cd";
+
 // The dashboard and the API receive no HTTP requests for most of the day.
 // Railway stops them after 5 to 10 minutes without traffic and starts them
 // again on the next HTTP request.
@@ -55,7 +59,7 @@ export default defineRailway(() => {
 
   // ---------------------------------------------------------------- Jobs (exit 0 when done)
   const dbMigrate = service("db-migrate", {
-    source: image("ghcr.io/openstatushq/openstatus-db-migrate:latest"),
+    source: image("ghcr.io/openstatushq/openstatus-db-migrate:f8057fb"),
     env: { DATABASE_URL: libsql.env.DATABASE_URL },
   });
 
@@ -141,6 +145,9 @@ export default defineRailway(() => {
       RESEND_API_KEY: dashboard.env.RESEND_API_KEY,
       TINY_BIRD_API_KEY: tinybird.env.TB_LOCAL_WORKSPACE_TOKEN,
       TINYBIRD_URL: tinybird.env.TINYBIRD_URL,
+      // Without these, MCP OAuth sends users to openstatus.dev for approval.
+      OAUTH_ISSUER: "https://${{RAILWAY_PUBLIC_DOMAIN}}",
+      DASHBOARD_URL: "https://${{dashboard.RAILWAY_PUBLIC_DOMAIN}}",
     },
     healthcheck: "/ping",
     healthcheckTimeout: 300,
@@ -168,7 +175,7 @@ export default defineRailway(() => {
   // world. Extra probes derive their key from the first one, so the template
   // needs a single generated secret.
   const probe = service("probe", {
-    source: image("ghcr.io/openstatushq/private-location:latest"),
+    source: image(PROBE_IMAGE),
     env: {
       OPENSTATUS_INGEST_URL: ingest.env.INGEST_URL,
       OPENSTATUS_KEY: PROBE_KEY,
@@ -177,7 +184,7 @@ export default defineRailway(() => {
   });
   const regionalProbe = (name: string, region: string, suffix: string) =>
     service(name, {
-      source: image("ghcr.io/openstatushq/private-location:latest"),
+      source: image(PROBE_IMAGE),
       regions: { [region]: 1 },
       env: {
         OPENSTATUS_INGEST_URL: ingest.env.INGEST_URL,
