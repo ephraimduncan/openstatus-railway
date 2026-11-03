@@ -5,4 +5,4 @@
 until curl -sf --max-time 2 -o /dev/null http://localhost:8123/ping; do
   sleep 1
 done
-exec tinybird_server --port 8001
+exec tinybird_server --port 8001 --config /etc/tinybird-settings.py
