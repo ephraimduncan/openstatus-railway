@@ -54,7 +54,13 @@ export default defineRailway(() => {
       TINYBIRD_URL: "http://${{RAILWAY_PRIVATE_DOMAIN}}:7181",
     },
     volumeMounts: { "/data": volume("tinybird-data", VOLUME) },
-    deploy: { restartPolicyType: "ALWAYS" },
+    // Railway bills cached file data as memory. At this limit the kernel
+    // removes cached file data first. Tinybird Local uses approximately 1.7 GB
+    // at its peak.
+    deploy: {
+      restartPolicyType: "ALWAYS",
+      limitOverride: { containers: { memoryBytes: 2 * 1024 ** 3 } },
+    },
   });
 
   // ---------------------------------------------------------------- Jobs (exit 0 when done)

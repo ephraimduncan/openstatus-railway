@@ -24,7 +24,7 @@ The wrapper Dockerfiles are one `FROM` plus `ENV` lines. They exist because Rail
 
 All secrets (`AUTH_SECRET`, `CRON_SECRET`, the probe key) are generated at deploy time. The Tinybird tokens are fixed defaults because Tinybird Local only accepts tokens in its own signed format; the service is private-network only. See [Rotate the Tinybird tokens](#rotate-the-tinybird-tokens).
 
-Tinybird Local is the heaviest service (about 1.5 GB of RAM at rest). Plan for a Hobby plan or higher.
+Tinybird Local is the heaviest service (about 1.5 GB of RAM at rest). Plan for a Hobby plan or higher. Its memory limit is 2 GiB, because Railway bills cached file data as memory and the limit makes the kernel remove that cache first. If `tinybird-local` restarts because it is out of memory, increase `memoryBytes` in `.railway/railway.ts`.
 
 Railway stops the `dashboard` and `server` services when they receive no HTTP requests for 5 to 10 minutes (Railway Serverless). The next HTTP request starts the services again. Thus, the first HTTP request to a stopped service is slow, and it can get a 502 error one time.
 
