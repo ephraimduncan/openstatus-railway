@@ -24,6 +24,8 @@ sleep 5
 echo "Tinybird Local is up."
 
 cd /work
+python3 /partitions.py
+
 attempt=1
 until tb --cloud --host "${TB_HOST}" --token "${TB_TOKEN}" deploy; do
   if [ "$attempt" -ge 3 ]; then

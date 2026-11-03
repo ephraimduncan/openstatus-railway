@@ -9,11 +9,12 @@ RUN apt-get update \
 
 WORKDIR /work
 # Only packages/tinybird from the OpenStatus repo is needed (datasources, materializations, endpoints).
-RUN curl -fsSL "https://github.com/openstatusHQ/openstatus/archive/refs/heads/${OPENSTATUS_REF}.tar.gz" \
+RUN curl -fsSL "https://github.com/openstatusHQ/openstatus/archive/${OPENSTATUS_REF}.tar.gz" \
     | tar -xz --strip-components=3 --wildcards "openstatus-*/packages/tinybird/*" \
     && rm -rf node_modules src scripts package.json tsconfig.json \
     && ls
 
+COPY partitions.py /partitions.py
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
