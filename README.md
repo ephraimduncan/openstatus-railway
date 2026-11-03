@@ -26,6 +26,8 @@ All secrets (`AUTH_SECRET`, `CRON_SECRET`, the probe key) are generated at deplo
 
 Tinybird Local is the heaviest service (about 1.5 GB of RAM at rest). Plan for a Hobby plan or higher.
 
+Railway stops the `dashboard` and `server` services when they receive no HTTP requests for 5 to 10 minutes (Railway Serverless). The next HTTP request starts the services again. Thus, the first HTTP request to a stopped service is slow, and it can get a 502 error one time.
+
 ## First login
 
 1. Wait until `db-migrate` and `tinybird-deploy` show **Completed** and the other services are green. The first deploy takes a few minutes because Railway builds the three helper images.

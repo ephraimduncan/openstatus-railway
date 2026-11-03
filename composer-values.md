@@ -59,6 +59,10 @@ TB_LOCAL_WORKSPACE_TOKEN="p.eyJ1IjogIjIzZTE0YmFkLWFlYmQtNGVjMi04MTVkLTMyYmI0ZDll
 | `probe-eu-west` | EU West (Amsterdam) |
 | `probe-asia` | Southeast Asia (Singapore) |
 
+## Serverless (service settings, not variables)
+
+Make sure that **Settings → Deploy → Serverless** is on for `dashboard` and `server`.
+
 ## Variable descriptions (optional, shown in the deploy dialog)
 
 | Variable | Description |

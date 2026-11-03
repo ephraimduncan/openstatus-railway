@@ -26,6 +26,11 @@ const TINYBIRD_USER_TOKEN = "p.eyJ1IjogIjI2OTVhNDEzLTllMTctNDE1YS1hOWFmLTJmMzMxZ
 // Mirrored here so `railway config plan` does not propose shrinking them.
 const VOLUME = { region: "us-east4-eqdc4a", sizeMB: 50000 };
 
+// The dashboard and the API receive no HTTP requests for most of the day.
+// Railway stops them after 5 to 10 minutes without traffic and starts them
+// again on the next HTTP request.
+const SLEEP_WHEN_IDLE = { restartPolicyType: "ALWAYS", sleepApplication: true } as const;
+
 export default defineRailway(() => {
   // ---------------------------------------------------------------- Data
   const libsql = service("libsql", {
@@ -104,7 +109,7 @@ export default defineRailway(() => {
     },
     healthcheck: "/login",
     healthcheckTimeout: 300,
-    deploy: { restartPolicyType: "ALWAYS" },
+    deploy: SLEEP_WHEN_IDLE,
   });
 
   const statusPage = service("status-page", {
@@ -139,7 +144,7 @@ export default defineRailway(() => {
     },
     healthcheck: "/ping",
     healthcheckTimeout: 300,
-    deploy: { restartPolicyType: "ALWAYS" },
+    deploy: SLEEP_WHEN_IDLE,
   });
 
   // ---------------------------------------------------------------- Monitoring
