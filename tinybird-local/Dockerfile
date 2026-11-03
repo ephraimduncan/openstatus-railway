@@ -11,6 +11,8 @@
 #   cores, which is six workers on Railway. OpenStatus sends data only through
 #   the Events API. Thus, PYTHON_CPU_COUNT keeps one worker, and setup.sh stops
 #   the setup process after it makes the workspace.
+# - server.sh starts the Tinybird API only after ClickHouse accepts
+#   connections (see the script).
 # - This file changes files in the base image, and the upstream `latest` tag
 #   changes frequently. Thus, FROM uses one known digest. To upgrade, change
 #   the digest.
@@ -22,11 +24,13 @@ COPY clickhouse-local-railway.xml /etc/clickhouse-local-railway.xml
 COPY clickhouse-wrapper.sh /usr/local/sbin/clickhouse-wrapper.sh
 COPY entrypoint.sh /railway-entrypoint.sh
 COPY setup.sh /usr/local/sbin/tinybird-setup.sh
-RUN chmod +x /railway-entrypoint.sh /usr/local/sbin/clickhouse-wrapper.sh /usr/local/sbin/tinybird-setup.sh \
+COPY server.sh /usr/local/sbin/tinybird-server.sh
+RUN chmod +x /railway-entrypoint.sh /usr/local/sbin/clickhouse-wrapper.sh /usr/local/sbin/tinybird-setup.sh /usr/local/sbin/tinybird-server.sh \
     && mv /usr/bin/clickhouse /usr/bin/clickhouse.real \
     && cp /usr/local/sbin/clickhouse-wrapper.sh /usr/bin/clickhouse \
     && sed -i 's/^worker_processes .*/worker_processes 2;/' /etc/nginx/nginx.conf \
     && sed -i '/^\[program:tinybird-kafka\]/a autostart=false' /etc/supervisor/conf.d/supervisord.conf \
     && sed -i '/^\[program:tinybird-mcp\]/a autostart=false' /etc/supervisor/conf.d/supervisord.conf \
-    && sed -i 's#^command=python /app/tinybird-local/setup\.pyc$#command=/usr/local/sbin/tinybird-setup.sh#' /etc/supervisor/conf.d/supervisord.conf
+    && sed -i 's#^command=python /app/tinybird-local/setup\.pyc$#command=/usr/local/sbin/tinybird-setup.sh#' /etc/supervisor/conf.d/supervisord.conf \
+    && sed -i 's#^command=tinybird_server --port 8001$#command=/usr/local/sbin/tinybird-server.sh#' /etc/supervisor/conf.d/supervisord.conf
 CMD ["/railway-entrypoint.sh"]
