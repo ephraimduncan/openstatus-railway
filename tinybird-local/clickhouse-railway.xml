@@ -18,4 +18,21 @@
     <max_concurrent_queries>32</max_concurrent_queries>
     <max_connections>256</max_connections>
     <async_load_databases>false</async_load_databases>
+
+    <!-- The Railway cost increases with each GB of memory and volume space.
+         Tinybird sets these caches to 5 GiB each for a cloud host. Its system
+         logs keep three months of data, which used most of the volume. When a
+         log TTL changes, ClickHouse renames the previous table to *_0 at start.
+         The previous TTL then removes the data in that table. -->
+    <mark_cache_size>268435456</mark_cache_size>
+    <index_mark_cache_size>67108864</index_mark_cache_size>
+    <query_log>
+        <ttl>toStartOfWeek(event_date) + INTERVAL 1 WEEK</ttl>
+    </query_log>
+    <query_views_log>
+        <ttl>toStartOfWeek(event_date) + INTERVAL 1 WEEK</ttl>
+    </query_views_log>
+    <part_log>
+        <ttl>event_date + INTERVAL 7 DAY</ttl>
+    </part_log>
 </clickhouse>

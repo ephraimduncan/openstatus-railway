@@ -7,16 +7,26 @@
 #   capped, every `clickhouse local` helper Tinybird spawns gets a small config
 #   through a wrapper around the binary, and the Kafka connector and MCP server
 #   (unused by OpenStatus) stay off.
-FROM tinybirdco/tinybird-local:latest
+# - Tinybird starts one CSV import worker (approximately 330 MB) per two host
+#   cores, which is six workers on Railway. OpenStatus sends data only through
+#   the Events API. Thus, PYTHON_CPU_COUNT keeps one worker, and setup.sh stops
+#   the setup process after it makes the workspace.
+# - This file changes files in the base image, and the upstream `latest` tag
+#   changes frequently. Thus, FROM uses one known digest. To upgrade, change
+#   the digest.
+FROM tinybirdco/tinybird-local:latest@sha256:c3fe9709224e6898f89b1dc1073d0046e665d2dc571c5c93ef13c807b6bb15f4
+ENV PYTHON_CPU_COUNT=2
 COPY clickhouse-railway.xml /etc/clickhouse-server/config.d/zz-railway.xml
 COPY clickhouse-users-railway.xml /etc/clickhouse-server/users.d/zz-railway.xml
 COPY clickhouse-local-railway.xml /etc/clickhouse-local-railway.xml
 COPY clickhouse-wrapper.sh /usr/local/sbin/clickhouse-wrapper.sh
 COPY entrypoint.sh /railway-entrypoint.sh
-RUN chmod +x /railway-entrypoint.sh /usr/local/sbin/clickhouse-wrapper.sh \
+COPY setup.sh /usr/local/sbin/tinybird-setup.sh
+RUN chmod +x /railway-entrypoint.sh /usr/local/sbin/clickhouse-wrapper.sh /usr/local/sbin/tinybird-setup.sh \
     && mv /usr/bin/clickhouse /usr/bin/clickhouse.real \
     && cp /usr/local/sbin/clickhouse-wrapper.sh /usr/bin/clickhouse \
     && sed -i 's/^worker_processes .*/worker_processes 2;/' /etc/nginx/nginx.conf \
     && sed -i '/^\[program:tinybird-kafka\]/a autostart=false' /etc/supervisor/conf.d/supervisord.conf \
-    && sed -i '/^\[program:tinybird-mcp\]/a autostart=false' /etc/supervisor/conf.d/supervisord.conf
+    && sed -i '/^\[program:tinybird-mcp\]/a autostart=false' /etc/supervisor/conf.d/supervisord.conf \
+    && sed -i 's#^command=python /app/tinybird-local/setup\.pyc$#command=/usr/local/sbin/tinybird-setup.sh#' /etc/supervisor/conf.d/supervisord.conf
 CMD ["/railway-entrypoint.sh"]

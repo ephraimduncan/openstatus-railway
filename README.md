@@ -24,7 +24,7 @@ The wrapper Dockerfiles are one `FROM` plus `ENV` lines. They exist because Rail
 
 All secrets (`AUTH_SECRET`, `CRON_SECRET`, the probe key) are generated at deploy time. The Tinybird tokens are fixed defaults because Tinybird Local only accepts tokens in its own signed format; the service is private-network only. See [Rotate the Tinybird tokens](#rotate-the-tinybird-tokens).
 
-Tinybird Local is the heaviest service (about 1 GB of RAM at rest). Plan for a Hobby plan or higher.
+Tinybird Local is the heaviest service (about 1.5 GB of RAM at rest). Plan for a Hobby plan or higher.
 
 ## First login
 
@@ -86,6 +86,14 @@ The OpenStatus images track the `latest` tag. To upgrade:
 2. Redeploy `dashboard`, `status-page`, `server`, `workflows`, `private-location` and `probe`.
 3. Redeploy `tinybird-deploy` so new analytics pipes are created.
 
+`tinybird-local/Dockerfile` changes files in the upstream Tinybird Local image, and the upstream `latest` tag changes frequently. Thus, the Dockerfile uses one known digest of the image. To use a newer Tinybird Local, change the digest in `tinybird-local/Dockerfile`.
+
+The ClickHouse system logs in `tinybird-local` keep one week of data. Previous versions of this template kept three months of data. When you deploy this version to a project that you deployed before, ClickHouse renames the three-month log tables to `system.query_log_0`, `system.query_views_log_0` and `system.part_log_0`. ClickHouse removes the data in these tables in three months or less. To release the disk space immediately, use this command:
+
+```bash
+railway ssh -s tinybird-local -- clickhouse client -q "DROP TABLE IF EXISTS system.query_log_0, system.query_views_log_0, system.part_log_0"
+```
+
 ## Rotate the Tinybird tokens
 
 Generate a new pair and set them on the `tinybird-local` service (every consumer references those variables):
@@ -115,7 +123,6 @@ os-admin register-probe <workspace-id>
 os-admin assign-all <workspace-id>
 os-admin page-domain <slug> <hostname>
 os-admin page-icon <slug> <url>
-os-admin tinybird-tokens
 os-admin sql "<statement>"
 ```
 

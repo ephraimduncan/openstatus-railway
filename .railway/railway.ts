@@ -191,7 +191,6 @@ export default defineRailway(() => {
       CRON_SECRET: workflows.env.CRON_SECRET,
       WORKFLOWS_URL: workflows.env.WORKFLOWS_URL,
       DATABASE_URL: libsql.env.DATABASE_URL,
-      TINYBIRD_URL: tinybird.env.TINYBIRD_URL,
       PROBE_KEYS:
         "railway-us-east=${{probe.OPENSTATUS_KEY}},railway-us-west=${{probe-us-west.OPENSTATUS_KEY}},railway-eu-west=${{probe-eu-west.OPENSTATUS_KEY}},railway-asia=${{probe-asia.OPENSTATUS_KEY}}",
     },

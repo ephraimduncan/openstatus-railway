@@ -3,6 +3,11 @@
         <default>
             <max_threads>4</max_threads>
             <max_insert_threads>2</max_insert_threads>
+            <!-- The query condition cache adds entries for each dashboard query
+                 with new time limits. The cache counts approximately 32 bytes for
+                 each entry, but each entry uses approximately 500 bytes. Thus, the
+                 100 MiB limit let the cache increase to approximately 1.5 GB. -->
+            <use_query_condition_cache>0</use_query_condition_cache>
         </default>
     </profiles>
 </clickhouse>
