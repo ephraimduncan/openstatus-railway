@@ -20,7 +20,7 @@ Self-host [OpenStatus](https://github.com/openstatusHQ/openstatus) (status pages
 | `tinybird-local` | `tinybird-local/Dockerfile` (upstream `tinybird-local` image) | Time-series analytics (ClickHouse, volume) |
 | `tinybird-deploy` | `tinybird-deploy/Dockerfile` | One-shot job that loads the OpenStatus analytics schema |
 
-The wrapper Dockerfiles are one `FROM` plus `ENV` lines. They exist because Railway's template generator only keeps variables that reference other services, so every fixed setting (ports, `SELF_HOST`, dummy Upstash values, and so on) lives in the image and the template carries just seven inputs.
+The wrapper Dockerfiles are one `FROM` plus `ENV` lines. They exist because Railway's template generator only keeps variables that reference other services, so every fixed setting (ports, `SELF_HOST`, dummy Upstash values, and so on) lives in the image and the template carries just seven inputs. `private-location/Dockerfile` also builds the ingest server from source with a longer idle timeout for connections. With the upstream timeout, the remote probes lose some check results.
 
 All secrets (`AUTH_SECRET`, `CRON_SECRET`, the probe key) are generated at deploy time. The Tinybird tokens are fixed defaults because Tinybird Local only accepts tokens in its own signed format; the service is private-network only. See [Rotate the Tinybird tokens](#rotate-the-tinybird-tokens).
 
@@ -102,7 +102,7 @@ To upgrade OpenStatus:
 2. Change the tag in `db-migrate/Dockerfile`, push this change alone, and wait until `db-migrate` shows **Completed**.
 3. Change the tag in `dashboard/Dockerfile`, `status-page/Dockerfile`, `server/Dockerfile`, `workflows/Dockerfile` and `private-location/Dockerfile`.
 4. Change the digest in `probe/Dockerfile` to the digest of the probe image from the same week.
-5. Set `OPENSTATUS_REF` in `tinybird-deploy/Dockerfile` to the full commit SHA.
+5. Set `OPENSTATUS_REF` in `tinybird-deploy/Dockerfile` and `private-location/Dockerfile` to the full commit SHA.
 6. Push the changes. Railway rebuilds the applications, and `tinybird-deploy` loads the new analytics schema.
 
 Do step 2 before step 6, because the new application code uses the new database tables.
