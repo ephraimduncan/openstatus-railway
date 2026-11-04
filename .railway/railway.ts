@@ -1,4 +1,4 @@
-import { defineRailway, github, group, project, service, volume } from "railway/iac";
+import { defineRailway, github, group, preserve, project, service, volume } from "railway/iac";
 
 // Every service that needs fixed settings is built from a tiny Dockerfile in
 // this repo (FROM the upstream image + ENV). Railway's template generator only
@@ -11,10 +11,8 @@ const fromRepo = (dir: string) => github(REPO, { branch: "main", rootDirectory: 
 // Only rebuild a service when its own directory changes (README edits should not redeploy everything).
 const watch = (dir: string) => ({ watchPatterns: [`/${dir}/**`] });
 
-// Secrets of the reference project. In the published template these become ${{secret(32)}}.
-const AUTH_SECRET = "eMvhfqafUwDIwAOfOCjhKOwGoKIaqpQPMifhjTUjrkXqALrL";
-const CRON_SECRET = "f4c1c8d0d94e7fb74448526350d0f5064eebfe712e145124";
-const PROBE_KEY = "42d02842a1c64d39b82bfc762f6ac524";
+// This repository is public. Keep secret values in Railway only: preserve()
+// keeps the value that is set there.
 
 // Tinybird Local only accepts tokens in the `tb local generate-tokens` format
 // (HS256 with a fixed key), so Railway cannot generate them. The service is
@@ -83,7 +81,7 @@ export default defineRailway(() => {
     env: {
       PORT: "${{dashboard.PORT}}",
       DATABASE_URL: libsql.env.DATABASE_URL,
-      CRON_SECRET: CRON_SECRET,
+      CRON_SECRET: preserve(),
       WORKFLOWS_URL: "http://${{RAILWAY_PRIVATE_DOMAIN}}:3000",
       SITE_URL: "https://${{dashboard.RAILWAY_PUBLIC_DOMAIN}}",
       RESEND_API_KEY: "${{dashboard.RESEND_API_KEY}}",
@@ -103,7 +101,7 @@ export default defineRailway(() => {
       // Railway injects PORT=8080 unless a PORT variable exists, and the Next
       // apps must listen on 3000 (server-side tRPC calls localhost:3000).
       PORT: "3000",
-      AUTH_SECRET: AUTH_SECRET,
+      AUTH_SECRET: preserve(),
       // Auth.js builds magic links and OAuth callbacks from this URL; without it
       // they point at the container's bind address.
       AUTH_URL: "https://${{RAILWAY_PUBLIC_DOMAIN}}",
@@ -182,7 +180,7 @@ export default defineRailway(() => {
     build: watch("probe"),
     env: {
       OPENSTATUS_INGEST_URL: ingest.env.INGEST_URL,
-      OPENSTATUS_KEY: PROBE_KEY,
+      OPENSTATUS_KEY: preserve(),
     },
     deploy: { restartPolicyType: "ALWAYS" },
   });
