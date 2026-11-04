@@ -20,7 +20,7 @@ Self-host [OpenStatus](https://github.com/openstatusHQ/openstatus) (status pages
 | `tinybird-local` | `tinybird-local/Dockerfile` (upstream `tinybird-local` image) | Time-series analytics (ClickHouse, volume) |
 | `tinybird-deploy` | `tinybird-deploy/Dockerfile` | One-shot job that loads the OpenStatus analytics schema |
 
-The wrapper Dockerfiles are one `FROM` plus `ENV` lines. They exist because Railway's template generator only keeps variables that reference other services, so every fixed setting (ports, `SELF_HOST`, dummy Upstash values, and so on) lives in the image and the template carries just seven inputs. `private-location/Dockerfile` also builds the ingest server from source with a longer idle timeout for connections. With the upstream timeout, the remote probes lose some check results.
+The wrapper Dockerfiles are one `FROM` plus `ENV` lines. They exist because Railway's template generator only keeps variables that reference other services, so every fixed setting (ports, `SELF_HOST`, dummy Upstash values, and so on) lives in the image and the template carries just seven inputs.
 
 All secrets (`AUTH_SECRET`, `CRON_SECRET`, the probe key) are generated at deploy time. The Tinybird tokens are fixed defaults because Tinybird Local only accepts tokens in its own signed format; the service is private-network only. See [Rotate the Tinybird tokens](#rotate-the-tinybird-tokens).
 
@@ -94,15 +94,15 @@ Add these variables to the `dashboard` service and Railway redeploys it:
 
 ## Upgrading
 
-All services use one OpenStatus version: commit `f8057fb` of [openstatusHQ/openstatus](https://github.com/openstatusHQ/openstatus). The probe image has only a `latest` tag, thus `probe/Dockerfile` selects the build from the same week by its digest. All versions are in this repository, thus a new deploy of the template gets the same versions.
+The services use commit `f8057fb` of [openstatusHQ/openstatus](https://github.com/openstatusHQ/openstatus). `private-location` uses `39780ae`, because this commit has one more change to the ingest server ([#3025](https://github.com/openstatusHQ/openstatus/pull/3025)). With `f8057fb`, the remote probes lose some check results. The probe image has only a `latest` tag, thus `probe/Dockerfile` selects the build from the same week by its digest. All versions are in this repository, thus a new deploy of the template gets the same versions.
 
 To upgrade OpenStatus:
 
-1. Select a commit that has a tag in the [`openstatus-dashboard` image tags](https://github.com/openstatusHQ/openstatus/pkgs/container/openstatus-dashboard).
+1. Select a commit that has a tag in each of the six images: [`openstatus-dashboard`](https://github.com/openstatusHQ/openstatus/pkgs/container/openstatus-dashboard), `openstatus-status-page`, `openstatus-server`, `openstatus-workflows`, `openstatus-private-location` and `openstatus-db-migrate`. Upstream publishes images only for the services that a commit changes. To examine a tag, use `docker manifest inspect ghcr.io/openstatushq/<image>:<commit>`.
 2. Change the tag in `db-migrate/Dockerfile`, push this change alone, and wait until `db-migrate` shows **Completed**.
 3. Change the tag in `dashboard/Dockerfile`, `status-page/Dockerfile`, `server/Dockerfile`, `workflows/Dockerfile` and `private-location/Dockerfile`.
 4. Change the digest in `probe/Dockerfile` to the digest of the probe image from the same week.
-5. Set `OPENSTATUS_REF` in `tinybird-deploy/Dockerfile` and `private-location/Dockerfile` to the full commit SHA.
+5. Set `OPENSTATUS_REF` in `tinybird-deploy/Dockerfile` to the full commit SHA.
 6. Push the changes. Railway rebuilds the applications, and `tinybird-deploy` loads the new analytics schema.
 
 Do step 2 before step 6, because the new application code uses the new database tables.
