@@ -19,4 +19,4 @@ link_dir /var/lib/clickhouse clickhouse
 link_dir /redis-data redis
 
 echo "tinybird-local: state persisted under $DATA_ROOT (clickhouse, redis)"
-exec /usr/bin/supervisord
+exec /usr/bin/supervisord -c /etc/supervisor/supervisord.conf
