@@ -28,7 +28,7 @@ This template deploys the complete openstatus stack inside one Railway project, 
 
 ### Implementation Details
 
-Every service that needs fixed settings is built from a one-line Dockerfile in the template repository so that only secrets and cross-service references remain as variables. Tinybird Local is tuned to fit Railway's 1000-process limit per container. Operations that openstatus normally performs through its cloud (workspace limits, probe registration, status page hostnames) are exposed as commands:
+Every service that needs fixed settings is built from a one-line Dockerfile in the template repository so that only secrets and cross-service references remain as variables. Tinybird Local is tuned to fit Railway's 1000-process limit per container and to use approximately 1.5 GB of memory. After you deploy, set a 2 GB memory limit on `tinybird-local` and select **Enable Serverless** on `dashboard` and `server`. With these settings, the project costs approximately $25 to $30 each month. The section "Lower the bill" in the guide shows the steps. Operations that openstatus normally performs through its cloud (workspace limits, probe registration, status page hostnames) are exposed as commands:
 
 ```
 railway ssh -s cron -- os-admin setup WORKSPACE_ID

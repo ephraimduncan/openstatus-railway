@@ -59,9 +59,9 @@ TB_LOCAL_WORKSPACE_TOKEN="p.eyJ1IjogIjIzZTE0YmFkLWFlYmQtNGVjMi04MTVkLTMyYmI0ZDll
 | `probe-eu-west` | EU West (Amsterdam) |
 | `probe-asia` | Southeast Asia (Singapore) |
 
-## Serverless (service settings, not variables)
+## Serverless and replica limits
 
-Make sure that **Settings → Deploy → Serverless** is on for `dashboard` and `server`.
+A template cannot keep these settings. The README section "Lower the bill" tells each person who deploys the template to set them.
 
 ## Variable descriptions (optional, shown in the deploy dialog)
 

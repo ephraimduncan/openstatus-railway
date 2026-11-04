@@ -13,10 +13,10 @@ Self-host [OpenStatus](https://github.com/openstatusHQ/openstatus) (status pages
 | `server` | `server/Dockerfile` | REST / ConnectRPC / MCP API (public) |
 | `workflows` | `workflows/Dockerfile` | Background jobs, alerting, cron endpoints (volume) |
 | `private-location` | `private-location/Dockerfile` | Ingest server: receives check results from probes (public, for extra probes) |
-| `probe`, `probe-us-west`, `probe-eu-west`, `probe-asia` | `ghcr.io/openstatushq/private-location` | Monitoring probes in Virginia, California, Amsterdam and Singapore |
+| `probe`, `probe-us-west`, `probe-eu-west`, `probe-asia` | `probe/Dockerfile` (upstream `private-location` image) | Monitoring probes in Virginia, California, Amsterdam and Singapore |
 | `cron` | `cron/Dockerfile` | Scheduler sidecar + `os-admin` toolbox |
 | `libsql` | `libsql/Dockerfile` (upstream `libsql-server` image) | Application database (volume) |
-| `db-migrate` | `ghcr.io/openstatushq/openstatus-db-migrate` | One-shot schema migration (exits when done) |
+| `db-migrate` | `db-migrate/Dockerfile` (upstream `openstatus-db-migrate` image) | One-shot schema migration (exits when done) |
 | `tinybird-local` | `tinybird-local/Dockerfile` (upstream `tinybird-local` image) | Time-series analytics (ClickHouse, volume) |
 | `tinybird-deploy` | `tinybird-deploy/Dockerfile` | One-shot job that loads the OpenStatus analytics schema |
 
@@ -24,9 +24,7 @@ The wrapper Dockerfiles are one `FROM` plus `ENV` lines. They exist because Rail
 
 All secrets (`AUTH_SECRET`, `CRON_SECRET`, the probe key) are generated at deploy time. The Tinybird tokens are fixed defaults because Tinybird Local only accepts tokens in its own signed format; the service is private-network only. See [Rotate the Tinybird tokens](#rotate-the-tinybird-tokens).
 
-Tinybird Local is the heaviest service (about 1.5 GB of RAM at rest). Plan for a Hobby plan or higher. Its memory limit is 2 GiB, because Railway bills cached file data as memory and the limit makes the kernel remove that cache first. If `tinybird-local` restarts because it is out of memory, increase `memoryBytes` in `.railway/railway.ts`.
-
-Railway stops the `dashboard` and `server` services when they receive no HTTP requests for 5 to 10 minutes (Railway Serverless). The next HTTP request starts the services again. Thus, the first HTTP request to a stopped service is slow, and it can get a 502 error one time.
+Tinybird Local is the heaviest service (about 1.5 GB of RAM at rest). Plan for a Hobby plan or higher. To keep the monthly bill low, set the two options in [Lower the bill](#lower-the-bill) after you deploy.
 
 ## First login
 
@@ -38,6 +36,20 @@ Railway stops the `dashboard` and `server` services when they receive no HTTP re
 ## Spread the probes across regions
 
 The four probes deploy into your project's default region. Move three of them once, in each service's **Settings → Deploy → Region**: `probe-us-west` to US West (California), `probe-eu-west` to EU West (Amsterdam), `probe-asia` to Southeast Asia (Singapore). Railway redeploys them in place. `probe` stays where it is.
+
+## Lower the bill
+
+Railway bills memory by the GB. A template cannot keep these two settings, thus set them once after you deploy:
+
+1. In `tinybird-local`, open **Settings → Deploy → Replica Limits** and set the memory limit to 2 GB.
+2. In `dashboard` and in `server`, open **Settings → Deploy → Serverless** and select **Enable Serverless**.
+3. Deploy the staged changes.
+
+Railway bills cached file data as memory. With the memory limit, the kernel removes the file cache of `tinybird-local` first. Tinybird Local uses approximately 1.7 GB at most. If `tinybird-local` restarts because it is out of memory, increase the limit.
+
+Railway stops the `dashboard` and `server` services when they receive no HTTP requests for 5 to 10 minutes. The next HTTP request starts the services again. Thus, the first HTTP request to a stopped service is slow, and it can get a 502 error one time.
+
+With these settings, the project uses approximately $25 to $30 of resources each month. Without them, it uses approximately $45.
 
 ## Unlock features and connect the probes
 
@@ -82,18 +94,18 @@ Add these variables to the `dashboard` service and Railway redeploys it:
 
 ## Upgrading
 
-All services use one OpenStatus version: commit `f8057fb` of [openstatusHQ/openstatus](https://github.com/openstatusHQ/openstatus). The probe image has only a `latest` tag, thus `PROBE_IMAGE` in `.railway/railway.ts` selects the build from the same week by its digest.
+All services use one OpenStatus version: commit `f8057fb` of [openstatusHQ/openstatus](https://github.com/openstatusHQ/openstatus). The probe image has only a `latest` tag, thus `probe/Dockerfile` selects the build from the same week by its digest. All versions are in this repository, thus a new deploy of the template gets the same versions.
 
 To upgrade OpenStatus:
 
 1. Select a commit that has a tag in the [`openstatus-dashboard` image tags](https://github.com/openstatusHQ/openstatus/pkgs/container/openstatus-dashboard).
-2. Change the tag in `dashboard/Dockerfile`, `status-page/Dockerfile`, `server/Dockerfile`, `workflows/Dockerfile` and `private-location/Dockerfile`.
-3. Change the `db-migrate` image tag and `PROBE_IMAGE` in `.railway/railway.ts`.
-4. Set `OPENSTATUS_REF` in `tinybird-deploy/Dockerfile` to the full commit SHA.
-5. Run `railway config apply` and wait until `db-migrate` shows **Completed**.
-6. Push the commit. Railway rebuilds the applications, and `tinybird-deploy` loads the new analytics schema.
+2. Change the tag in `db-migrate/Dockerfile`, push this change alone, and wait until `db-migrate` shows **Completed**.
+3. Change the tag in `dashboard/Dockerfile`, `status-page/Dockerfile`, `server/Dockerfile`, `workflows/Dockerfile` and `private-location/Dockerfile`.
+4. Change the digest in `probe/Dockerfile` to the digest of the probe image from the same week.
+5. Set `OPENSTATUS_REF` in `tinybird-deploy/Dockerfile` to the full commit SHA.
+6. Push the changes. Railway rebuilds the applications, and `tinybird-deploy` loads the new analytics schema.
 
-Do step 5 before step 6, because the new application code uses the new database tables.
+Do step 2 before step 6, because the new application code uses the new database tables.
 
 `tinybird-local/Dockerfile` changes files in the upstream Tinybird Local image, and the upstream `latest` tag changes frequently. Thus, the Dockerfile uses one known digest of the image. To use a newer Tinybird Local, change the digest in `tinybird-local/Dockerfile`.
 
@@ -162,6 +174,6 @@ Generate the template from the project (`railway templates create --project <id>
 | `tinybird-local` | `TB_LOCAL_WORKSPACE_TOKEN` | the workspace token from `.railway/railway.ts` | Tinybird Local workspace token (must be a `tb local generate-tokens` token) |
 | `tinybird-local` | `TB_LOCAL_USER_TOKEN` | the user token from `.railway/railway.ts` | Tinybird Local user token |
 
-Every other variable is a `${{service.VAR}}` reference and survives generation. Make sure `status-page` has no `AUTH_URL` variable (only `dashboard` does); see `composer-values.md`. The template cannot pin a region per service, so after deploying, move `probe-us-west`, `probe-eu-west` and `probe-asia` to their regions (see First login below). `scripts/template-config.sh <code>` prints a template's stored configuration so you can check it. [`composer-values.md`](composer-values.md) has every block ready to paste.
+Every other variable is a `${{service.VAR}}` reference and survives generation. Make sure `status-page` has no `AUTH_URL` variable (only `dashboard` does); see `composer-values.md`. The template cannot pin a region per service, so after deploying, move `probe-us-west`, `probe-eu-west` and `probe-asia` to their regions (see First login below). `scripts/template-config.sh <code>` prints a template's stored configuration so you can check it. [`composer-values.md`](composer-values.md) has every block ready to paste. A template cannot keep Serverless or replica limits. The reference project gets them from `.railway/railway.ts`, and each person who deploys the template sets them with [Lower the bill](#lower-the-bill).
 
 OpenStatus is AGPL-3.0 licensed; this repository only contains deployment configuration (MIT).
